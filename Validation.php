@@ -98,6 +98,10 @@ class Validation
             }else{
                 $this->_validations[$name] = true;
             }
+
+            if(!$this->required($value) && $this->hasRequirement($name, 'optional')){
+                $this->_validations[$name] = ['optional' => true];
+            }
         }
 
         if($debug == true){
@@ -117,6 +121,31 @@ class Validation
 
             return true;
         }
+    }
+
+    /**
+     * Checks
+     *
+     * @param $input
+     * @param $requirement
+     * @return bool
+     */
+    public function hasRequirement($input, $requirement){
+        if($this->in($requirement, $this->_requirements[$input])){
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * This the field is optional it is always true
+     *
+     * @param $value
+     * @return bool
+     */
+    private function optional($value){
+        return true;
     }
 
     /**
