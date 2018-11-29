@@ -1,3 +1,5 @@
+## Validation
+
 Validate a `$_POST` array:  
 Keys without any requirements return true.  
 Using `$password` gets the value of another key  
