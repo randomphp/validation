@@ -48,7 +48,7 @@ $validation->min($string, 12);
 `urlActive`  
 `regex`  
 `date`  
-`dateFromat`  
+`dateFormat`  
 `dateBefore`  
 `dateAfter`  
 `isBoolean`  
