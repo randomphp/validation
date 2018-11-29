@@ -9,17 +9,19 @@ $validation->requirements([
   'username'        => 'required',
   'password'        => ['required', 'min:8'],
   'confirmPassword  => 'equals:$password',
-  'name'            => ['optional', 'max:255']
+  'name'            => ['optional', 'min:3']
 ]);
 $validation->validate();
 ```
+If the `optional` requirement is on an input it will return true if empty, when if there is more requirements attached the that input. However, if there is anything in the input, the other requirements will validate the value.  
   
-  You can call them individually as well:
-  ```
-  $validation = new Validation();
-  $validation->isArray($array);
-  $validation->min($string, 12);
-  ```
+    
+You can call them individually as well:
+```
+$validation = new Validation();
+$validation->isArray($array);
+$validation->min($string, 12);
+```
 
 ### Built-in requirements/rules
 
