@@ -8,7 +8,8 @@ $validation = new Validation($_POST);
 $validation->requirements([
   'username'        => 'required',
   'password'        => ['required', 'min:8'],
-  'confirmPassword  => 'equals:$password'
+  'confirmPassword  => 'equals:$password',
+  'name'            => ['optional', 'max:255']
 ]);
 $validation->validate();
 ```
@@ -17,11 +18,13 @@ $validation->validate();
   ```
   $validation = new Validation();
   $validation->isArray($array);
-  $validation->minLength($string, 12);
+  $validation->min($string, 12);
   ```
 
 ### Built-in requirements/rules
 
+`hasRequirement`  
+`optional`  
 `isArray`  
 `isInteger`  
 `isNumeric`  
