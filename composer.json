@@ -15,7 +15,10 @@
   },
   "autoload": {
     "psr-4":{
-      "RandomPhp\\": "src/"
+      "randomphp\\": "src/"
     }
-  }
+  },
+  "suggest": {
+        "ext-mbstring": "It can support the multiple bytes string length."
+  },
 }
