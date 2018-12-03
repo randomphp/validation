@@ -1,0 +1,21 @@
+
+{
+  "name": "randomphp/Validation",
+  "license": "MIT",
+  "description": "A standalone validation class",
+  "version": "0.7",
+  "authors": [
+    {
+      "name": "Mikkel Rasmussen",
+      "email": "mikkel@randomphp.com"
+    }
+  ],
+  "require": {
+    "php": ">=5.4"
+  },
+  "autoload": {
+    "psr-4":{
+      "RandomPhp\\": "src/"
+    }
+  }
+}
