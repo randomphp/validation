@@ -20,5 +20,5 @@
   },
   "suggest": {
         "ext-mbstring": "It can support the multiple bytes string length."
-  },
+  }
 }
