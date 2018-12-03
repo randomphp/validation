@@ -693,7 +693,7 @@ class Validation
     }
 
     /**
-     * Checks if $value contains only alphabetic character (a-z)
+     * Checks if $value contains only alphabetic characters (a-z)
      *
      * @param $value
      * @return false|int
@@ -704,7 +704,7 @@ class Validation
     }
 
     /**
-     * Checks if $value contains only alpha-numeric charactions (a-z & 0-9)
+     * Checks if $value contains only alpha-numeric characters (a-z & 0-9)
      *
      * @param $value
      * @return false|int
