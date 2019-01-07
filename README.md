@@ -3,7 +3,7 @@
 Validate a `$_POST` array:  
 Keys without any requirements return true.  
 Using `$password` gets the value of another key  
-```
+```php
 $validation = new Validation($_POST);
 $validation->requirements([
   'username'        => 'required',
@@ -17,7 +17,7 @@ If the `optional` requirement is on an input it will return true if empty, when 
   
     
 You can call them individually as well:
-```
+```php
 $validation = new Validation();
 $validation->isArray($array);
 $validation->min($string, 12);
