@@ -1,48 +1,148 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Mikkel Rasmussen
- * Date: 20-11-2018
- * Time: 10:35
- */
 
 class Validation
 {
-    private $_inputs,
-            $_requirements,
-            $_validations = array();
+    /**
+     * Generic error messages
+     *
+     * @var array
+     */
+    private $_messages = [
+        'isArray' => '\':input\' is not an array.',
+        'isInteger' => '\':input\' is not an integer.',
+        'isNumeric' => '\':input\' is not a numeric string.',
+        'required' => '\':input\' is required.',
+        'equals' => '\':input\' is not equal to \':param1\'.',
+        'different' => '\':input\' is not different from :param1.',
+        'isString' => '\':input\' is not a string.',
+        'length' => '\':input\' is either too long or short. (should be: :param1 characters)',
+        'min' => '\':input\' is too small. (min: :param1)',
+        'max' => '\':input\' is too big. (max: :param1)',
+        'between' => '\':input\' must be between :param1 and :param2',
+        'in' => '\':value is not in \':input\'',
+        'ip' => '\':input\' is not a valid IP.',
+        'ipv4' => '\':input\' is not a valid IPv4.',
+        'ipv6' => '\':input\' is not a valid IPv6.',
+        'email' => '\':input\' is not a valid e-mail address.',
+        'emailDNS' => '\':input\' is not an active e-mail address.',
+        'url' => '\':input\' is not a valid URL. (Valid prefixes: :prefixes)',
+        'urlActive' => '\':input\' is not an active URL.',
+        'regex' => '\':input\' had no matches with \':param1\'.',
+        'date' => '\':input\' is not a valid date.',
+        'dateFormat' => '\':input\' must match the format \':param1:\'.',
+        'dateBefore' => '\':input\' must be date before \':param1\'.',
+        'dateAfter' => '\':input\' must be date after \':param1\'.',
+        'isBoolean' => '\':input\' must be a valid boolean.',
+        'contains' => '\':input\' does not contain \':param1\'.',
+        'accepted' => '\':input\' must be accepted.',
+        'slug' => '\':input\' must only contain alpha-numeric characters, dashes and underscores. (a-z & 0-9 & - & _)',
+        'alpha' => '\':input\' must only contain alphabetic characters. (a-z)',
+        'alphaNum' => '\':input\' must only contain alpha-numeric characters. (a-z & 0-9)',
+    ];
 
     /**
-     * @var array
+     * @var array $_inputs, $_requirements & $_validations
+     */
+    private $_inputs = array(),
+        $_requirements = array(),
+        $_validations = array(),
+        $_errors = array(),
+        $_errormode = true;
+
+    /**
+     * @var array $validUrlPrefixes
      */
     protected $validUrlPrefixes = array('http://', 'https://', 'ftp://');
 
     /**
      * Validation constructor.
-     * This should be called like: new Validation($_POST) or new Validation(['password' => $password, 'username' => $username])
+     *
+     * Examples on how to call this class:
+     * - $v = new Validation($_POST|['username' => $username, 'password' => $password])->requirements([
+     * -   'username' => 'required',
+     * -   'password' => ['required', 'min:8']
+     * - ]);
+     * - $passed = $v->validate();
+     *
+     * - $v = new Validation()->inputs($_POST|['username' => $username, 'password' => $password])->requirements([
+     * -   'username' => 'required',
+     * -   'password' => ['required', 'min:8']
+     * - ]);
+     * - $passed = $v->validate();
+     *
+     * - $v = new Validation($_POST|['username' => $username, 'password' => $password], $rules|['username' => 'required', 'password' => ['required', 'min:8']]);
+     * - $passed = $v->validate();
+     *
+     * - $passed = new Validation($_POST|['username' => $username, 'password' => $password], $rules|['username' => 'required', 'password' => ['required', 'min:8']], true);
+     *
+     * @param array $inputs
+     * @param array $requirements
+     * @param bool $validate
+     *
+     * @return $this|array|bool
+     */
+    public function __construct($inputs = null, $requirements = null, $validate = false)
+    {
+        if($this->isArray($inputs))
+            $this->_inputs = $inputs;
+
+        if($this->isArray($requirements) && $this->required($requirements))
+            $this->_requirements = $requirements;
+
+        if($this->accepted($validate))
+            return $this->validate();
+
+        return $this;
+    }
+
+    /**
+     * Override a error message
+     *
+     * @param $rule
+     * @param null $message
+     * @return string
+     */
+    public function setMessage($rule, $message)
+    {
+        $this->_messages[$rule] = $message;
+    }
+
+    /**
+     * Override multiple error messages
      *
      * @param array $array
+     * @return string
      */
-    public function __construct($array = null)
+    public function setMessages(Array $array)
     {
-        if($this->isArray($array))
-            $this->_inputs = $array;
+        foreach ($array as $rule => $message) {
+            $this->_messages[$rule] = $message;
+        }
+    }
+
+    /**
+     * @param bool $errormode
+     */
+    public function setErrormode(bool $errormode)
+    {
+        $this->_errormode = $errormode;
+    }
+
+    /**
+     * This is where you set the inputs if you didn't do so within $this->__construct()
+     *
+     * @param array $array
+     * @return $this
+     */
+    public function inputs(Array $array)
+    {
+        $this->_inputs = $array;
 
         return $this;
     }
 
     /**
      * This is where you set the requirements for each value in the $inputs array
-     * Examples for the call:
-     * - $v->requirements([
-     * -   'password' => ['required', 'min:8'],
-     * -   'username' => 'required'
-     * - ]);
-     *
-     * - $v = new Validation($_POST)->requirements([
-     * -   'password' => ['required', 'min:8'],
-     * -   'username' => 'required'
-     * - ]);
      *
      * @param array $array
      * @return $this
@@ -57,11 +157,18 @@ class Validation
     /**
      * Checks if your array with input passes your array with requirements/rules
      *
-     * @param bool $debug
      * @return array|bool
      */
-    public function validate($debug = false)
+    public function validate()
     {
+        if(!$this->required($this->_inputs) && !$this->required($this->_requirements)){
+            if ($this->_errormode) {
+                return 'You are missing a set of either/both inputs or/and requirements.';
+            } else {
+                return false;
+            }
+        }
+
         foreach($this->_inputs as $name => $value){
             if(isset($this->_requirements[$name])){
                 if($this->isArray($this->_requirements[$name])){
@@ -69,34 +176,66 @@ class Validation
                         if($this->contains($rule, ':')){
                             $params = explode(':', $rule);
                             if($this->contains($params[1], '$')){
-                                $this->_validations[$name][$params[0]] = call_user_func_array(array($this, $params[0]), array($value, $this->_inputs[substr($params[1], 1)]));
+                                if (call_user_func_array(array($this, $params[0]), array($value, $this->_inputs[substr($params[1], 1)])) == false) {
+                                    $this->_validations[$name][$params[0]] = false;
+                                    $this->_errors[$name][$params[0]] = array($value, substr($params[1], 1), $this->_inputs[substr($params[1], 1)]);
+                                } else
+                                    $this->_validations[$name][$params[0]] = true;
                             }elseif($this->contains($params[1], '|')){
                                 $params[1] = explode('|', $params[1]);
-                                $this->_validations[$name][$params[0]] = call_user_func_array(array($this, $params[0]), array($value, $params[1][0], $params[1][1]));
+                                if (call_user_func_array(array($this, $params[0]), array($value, $params[1][0], $params[1][1])) == false) {
+                                    $this->_validations[$name][$params[0]] = false;
+                                    $this->_errors[$name][$params[0]] = array($value, $params[1][0], $params[1][1]);
+                                } else
+                                    $this->_validations[$name][$params[0]] = true;
                             }else{
-                                $this->_validations[$name][$params[0]] = call_user_func_array(array($this, $params[0]), array($value, $params[1]));
+                                if (call_user_func_array(array($this, $params[0]), array($value, $params[1])) == false) {
+                                    $this->_validations[$name][$params[0]] = false;
+                                    $this->_errors[$name][$params[0]] = array($value, $params[1]);
+                                }   else
+                                    $this->_validations[$name][$params[0]] = true;
                             }
                         }else{
-                            $this->_validations[$name][$rule] = call_user_func(array($this, $rule), $value);
+                            if (call_user_func(array($this, $rule), $value) == false) {
+                                $this->_validations[$name][$rule] = false;
+                                $this->_errors[$name][$rule] = array($value);
+                            } else
+                                $this->_validations[$name][$rule] = true;
                         }
                     }
                 }else{
                     if($this->contains($this->_requirements[$name], ':')){
                         $params = explode(':', $this->_requirements[$name]);
                         if($this->contains($params[1], '$')){
-                            $this->_validations[$name][$params[0]] = call_user_func_array(array($this, $params[0]), array($value, $this->_inputs[substr($params[1], 1)]));
+                            if (call_user_func_array(array($this, $params[0]), array($value, $this->_inputs[substr($params[1], 1)])) == false) {
+                                $this->_validations[$name][$params[0]] = false;
+                                $this->_errors[$name][$params[0]] = array($value, substr($params[1], 1), $this->_inputs[substr($params[1], 1)]);
+                            } else
+                                $this->_validations[$name][$params[0]] = true;
                         }elseif($this->contains($params[1], '|')){
                             $params[1] = explode('|', $params[1]);
-                            $this->_validations[$name][$params[0]] = call_user_func_array(array($this, $params[0]), array($value, $params[1][0], $params[1][1]));
+                            if (call_user_func_array(array($this, $params[0]), array($value, $params[1][0], $params[1][1])) == false) {
+                                $this->_validations[$name][$params[0]] = false;
+                                $this->_errors[$name][$params[0]] = array($value, $params[1][0], $params[1][1]);
+                            } else
+                                $this->_validations[$name][$params[0]] = true;
                         }else{
-                            $this->_validations[$name][$params[0]] = call_user_func_array(array($this, $params[0]), array($value, $params[1]));
+                            if (call_user_func_array(array($this, $params[0]), array($value, $params[1])) == false) {
+                                $this->_validations[$name][$params[0]] = false;
+                                $this->_errors[$name][$params[0]] = array($value, $params[1]);
+                            } else
+                                $this->_validations[$name][$params[0]] = true;
                         }
                     }else{
-                        $this->_validations[$name][$this->_requirements[$name]] = call_user_func(array($this, $this->_requirements[$name]), $value);
+                        if (call_user_func(array($this, $this->_requirements[$name]), $value) == false) {
+                            $this->_validations[$name][$this->_requirements[$name]] = false;
+                            $this->_errors[$name][$this->_requirements[$name]] = array($value);
+                        } else
+                            $this->_validations[$name][$this->_requirements[$name]] = true;
                     }
                 }
             }else{
-                $this->_validations[$name] = true;
+                $this->_validations[$name] = ['optional' => true];
             }
 
             if(!$this->required($value) && $this->hasRequirement($name, 'optional')){
@@ -104,8 +243,15 @@ class Validation
             }
         }
 
-        if($debug == true){
-            return $this->_validations;
+        if($this->_errormode == true){
+            $msgs = array();
+            foreach ($this->_errors as $input => $requirement) {
+                foreach ($requirement as $rule => $params) {
+                    $msgs[] = $this->getMessage($input, $rule, $params);
+                }
+            }
+
+            return $msgs;
         }else{
             foreach($this->_validations as $valid){
                 if($this->isArray($valid)){
@@ -124,7 +270,26 @@ class Validation
     }
 
     /**
-     * Checks
+     * @param $input
+     * @param $rule
+     * @param array $params
+     * @return array
+     */
+    public function getMessage($input, $rule, $params = array())
+    {
+        $message = $this->_messages[$rule];
+
+        $message = @str_replace(':input', $input, $message);
+        $message = @str_replace(':value', $params[0], $message);
+        $message = @str_replace(':param1', $params[1], $message);
+        $message = @str_replace(':param2', $params[2], $message);
+        $message = @str_replace(':prefixes', "'".implode("', '", $this->validUrlPrefixes)."'", $message);
+
+        return $message;
+    }
+
+    /**
+     * Checks if an input has a requirement
      *
      * @param $input
      * @param $requirement
@@ -196,6 +361,8 @@ class Validation
         if(is_null($value)){
             return false;
         }elseif(is_string($value) && trim($value) === ""){
+            return false;
+        }elseif(empty($value)){
             return false;
         }
 
@@ -357,7 +524,7 @@ class Validation
             return $value >= $min && $value <= $max;
 
         if($this->isString($value))
-            return $this->betweenLength($value, $min, $max);
+            return $this->lengthBetween($value, $min, $max);
 
         return false;
     }
@@ -556,89 +723,6 @@ class Validation
     public function isBoolean($value)
     {
         return is_bool($value);
-    }
-
-    public function creditcard($value)
-    {
-        /**
-         * Luhn algorithm
-         * https://en.wikipedia.org/wiki/Luhn_algorithm
-         * Borrowed from https://github.com/vlucas - Who has probably taken it from somewhere else
-         *
-         * @return bool
-         */
-        $numberIsValid = function () use ($value) {
-            $number = preg_replace('/[^0-9]+/', '', $value);
-            $sum = 0;
-
-            $strlen = strlen($number);
-            if ($strlen < 13) {
-                return false;
-            }
-            for ($i = 0; $i < $strlen; $i++) {
-                $digit = (int)substr($number, $strlen - $i - 1, 1);
-                if ($i % 2 == 1) {
-                    $sub_total = $digit * 2;
-                    if ($sub_total > 9) {
-                        $sub_total = ($sub_total - 10) + 1;
-                    }
-                } else {
-                    $sub_total = $digit;
-                }
-                $sum += $sub_total;
-            }
-            if ($sum > 0 && $sum % 10 == 0) {
-                return true;
-            }
-
-            return false;
-        };
-
-        if ($numberIsValid()) {
-            if (!isset($cards)) {
-                return true;
-            } else {
-                $cardRegex = array(
-                    'visa' => '#^4[0-9]{12}(?:[0-9]{3})?$#',
-                    'mastercard' => '#^(5[1-5]|2[2-7])[0-9]{14}$#',
-                    'amex' => '#^3[47][0-9]{13}$#',
-                    'dinersclub' => '#^3(?:0[0-5]|[68][0-9])[0-9]{11}$#',
-                    'discover' => '#^6(?:011|5[0-9]{2})[0-9]{12}$#',
-                );
-
-                if (isset($cardType)) {
-                    // if we don't have any valid cards specified and the card we've been given isn't in our regex array
-                    if (!isset($cards) && !in_array($cardType, array_keys($cardRegex))) {
-                        return false;
-                    }
-
-                    // we only need to test against one card type
-                    return (preg_match($cardRegex[$cardType], $value) === 1);
-
-                } elseif (isset($cards)) {
-                    // if we have cards, check our users card against only the ones we have
-                    foreach ($cards as $card) {
-                        if (in_array($card, array_keys($cardRegex))) {
-                            // if the card is valid, we want to stop looping
-                            if (preg_match($cardRegex[$card], $value) === 1) {
-                                return true;
-                            }
-                        }
-                    }
-                } else {
-                    // loop through every card
-                    foreach ($cardRegex as $regex) {
-                        // until we find a valid one
-                        if (preg_match($regex, $value) === 1) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-
-        // if we've got this far, the card has passed no validation so it's invalid!
-        return false;
     }
 
     /**
