@@ -1,5 +1,9 @@
 ## Validation
 
+### Installation
+`composer require randomphp/validation`
+
+### How to
 Validate a `$_POST|$array` array:  
 Keys without any requirements return true.  
 Using `$password` gets the value of another key  
@@ -106,6 +110,3 @@ $validation->setMessages([
 - `slug`  
 - `alpha`  
 - `alphaNum`
-
-### TODO's
-- Check issues with the label `TODO`
