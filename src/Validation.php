@@ -1,5 +1,7 @@
 <?php
 
+namespace randomphp;
+
 class Validation
 {
     /**
