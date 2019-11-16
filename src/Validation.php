@@ -281,11 +281,11 @@ class Validation
     {
         $message = $this->_messages[$rule];
 
-        $message = @str_replace(':input', $input, $message);
-        $message = @str_replace(':value', $params[0], $message);
-        $message = @str_replace(':param1', $params[1], $message);
-        $message = @str_replace(':param2', $params[2], $message);
-        $message = @str_replace(':prefixes', "'".implode("', '", $this->validUrlPrefixes)."'", $message);
+        $message = ($this->contains($message, ':input') ? str_replace(':input', $input, $message) : $message);
+        $message = ($this->contains($message, ':inpuvaluet') ? str_replace(':value', $input, $params[0]) : $message);
+        $message = ($this->contains($message, ':param1') ? str_replace(':param1', $input, $params[1]) : $message);
+        $message = ($this->contains($message, ':param2') ? str_replace(':param2', $input, $params[2]) : $message);
+        $message = ($this->contains($message, ':prefixes') ? str_replace(':prefixes', "'".implode("', '", $this->validUrlPrefixes)."'", $message) : $message);
 
         return $message;
     }
