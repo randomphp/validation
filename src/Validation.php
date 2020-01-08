@@ -49,7 +49,8 @@ class Validation
         $_requirements = array(),
         $_validations = array(),
         $_errors = array(),
-        $_errormode = true;
+        $_errormode = true,
+        $_bail = false;
 
     /**
      * @var array $validUrlPrefixes
@@ -80,18 +81,20 @@ class Validation
      * @param array $inputs
      * @param array $requirements
      * @param bool $validate
-     *
-     * @return $this|array|bool
+     * @param bool $bail
      */
-    public function __construct($inputs = null, $requirements = null, $validate = false)
+    public function __construct($inputs = null, $requirements = null, $validate = false, $bail = false)
     {
-        if($this->isArray($inputs))
+        if ($this->isArray($inputs))
             $this->_inputs = $inputs;
 
-        if($this->isArray($requirements) && $this->required($requirements))
+        if ($this->isArray($requirements) && $this->required($requirements))
             $this->_requirements = $requirements;
 
-        if($this->accepted($validate))
+        if ($this->accepted($bail))
+            $this->_bail = true;
+
+        if ($this->accepted($validate))
             return $this->validate();
 
         return $this;
@@ -128,6 +131,14 @@ class Validation
     public function setErrormode(bool $errormode)
     {
         $this->_errormode = $errormode;
+    }
+
+    /**
+     * Set $bail to true
+     */
+    public function bail()
+    {
+        $this->_bail = true;
     }
 
     /**
@@ -204,6 +215,10 @@ class Validation
                             } else
                                 $this->_validations[$name][$rule] = true;
                         }
+
+                        if ($this->_bail && ! empty($this->_errors)) {
+                            break 2;
+                        }
                     }
                 }else{
                     if($this->contains($this->_requirements[$name], ':')){
@@ -212,6 +227,7 @@ class Validation
                             if (call_user_func_array(array($this, $params[0]), array($value, $this->_inputs[substr($params[1], 1)])) == false) {
                                 $this->_validations[$name][$params[0]] = false;
                                 $this->_errors[$name][$params[0]] = array($value, substr($params[1], 1), $this->_inputs[substr($params[1], 1)]);
+                                
                             } else
                                 $this->_validations[$name][$params[0]] = true;
                         }elseif($this->contains($params[1], '|')){
@@ -235,6 +251,10 @@ class Validation
                         } else
                             $this->_validations[$name][$this->_requirements[$name]] = true;
                     }
+
+                    if ($this->_bail && ! empty($this->_errors)) {
+                        break;
+                    }
                 }
             }else{
                 $this->_validations[$name] = ['optional' => true];
@@ -253,7 +273,10 @@ class Validation
                 }
             }
 
-            return $msgs;
+            if (! empty($msgs))
+                return $msgs;
+
+            return true;
         }else{
             foreach($this->_validations as $valid){
                 if($this->isArray($valid)){
