@@ -7,7 +7,12 @@
 Validate a `$_POST|$array` array:  
 Keys without any requirements return true.  
 Using `$password` gets the value of another key  
+
+The validation wil normally run of the requirements on each input before returning true or error messages.  
+However, if you call the `bail()` before you validate, it will stop after the first error
+
 ```
+// Without bail() active
 $validation = new Validation($_POST|$array);
 $validation->requirements([
   'username'        => 'required',
@@ -19,6 +24,21 @@ $passed = $validation->validate();
 ```
 
 ```
+// With bail() active
+$validation = new Validation($_POST|$array);
+$validation->requirements([
+  'username'        => 'required',
+  'password'        => ['required', 'min:8'],
+  'confirmPassword  => 'equals:$password',
+  'name'            => ['optional', 'min:3']
+]);
+$validation->bail();
+$passed = $validation->validate();
+```
+
+You can use the `__construct()` to do some things or everything.    
+Default: `__construct($inputs = null, $requirements = null, $validate = false, $bail = false)` 
+```
 $validation = new Validation($_POST|$array, $rules|[
   'username'        => 'required',
   'password'        => ['required', 'min:8'],
@@ -29,12 +49,23 @@ $passed = $validation->validate();
 ```
 
 ```
+// Here we are telling the __construct() to validate the input by adding the true after $rules
 $passed = new Validation($_POST|$array, $rules|[
   'username'        => 'required',
   'password'        => ['required', 'min:8'],
   'confirmPassword  => 'equals:$password',
   'name'            => ['optional', 'min:3']
-], true);
+], $validate = true);
+```
+
+```
+// You can also set the __construct() to bail after first error
+$passed = new Validation($_POST|$array, $rules|[
+  'username'        => 'required',
+  'password'        => ['required', 'min:8'],
+  'confirmPassword  => 'equals:$password',
+  'name'            => ['optional', 'min:3']
+], $validate = true, $bail = true);
 ```
 
 If the `optional` requirement is on an input it will return true if empty, when if there is more requirements attached the that input. However, if there is anything in the input, the other requirements will validate the value.  
